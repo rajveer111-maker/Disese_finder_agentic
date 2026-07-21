@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-dark: hsl(240 18% 6%);
+  --color-surface-dark: hsl(240 16% 9%);
+  --color-primary-purple: hsl(265 89% 66%);
+  --color-accent-cyan: hsl(160 84% 55%);
+  
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-space-grotesk), sans-serif;
+  
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px hsl(265 89% 66% / 0.3);
+    border-color: hsl(265 89% 66% / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px hsl(265 89% 66% / 0.7);
+    border-color: hsl(265 89% 66% / 0.8);
+  }
+}
+
+:root {
+  --background: #09090e;
+  --foreground: #f8fafc;
+  --primary: 265 89% 66%;
+  --accent: 160 84% 55%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #09090e;
+  color: #f8fafc;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism custom classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.glass-panel-heavy {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Gradient text utility */
+.gradient-text-primary {
+  background: linear-gradient(135deg, hsl(265 89% 66%) 0%, hsl(280 95% 70%) 50%, hsl(200 95% 60%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(265 89% 66% / 0.6);
+}
+
+/* Card padding overrides to guarantee spacing */
+.card-content-wrapper {
+  padding: 1.75rem !important; /* 28px */
+}
+
+@media (min-width: 768px) {
+  .card-content-wrapper {
+    padding: 2.5rem !important; /* 40px */
+  }
+}

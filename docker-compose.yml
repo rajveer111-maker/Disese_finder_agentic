@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MOCK_AWS=True
+      - AWS_REGION=us-east-1
+      - S3_BUCKET_NAME=virtual-cmo-raw-signals
+      - PINECONE_INDEX_NAME=clinical-guidelines
+      - BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+      - SAGEMAKER_ENDPOINT_BCI2A=bci2a-crdae-endpoint
+      - SAGEMAKER_ENDPOINT_EEG_PD=eeg-pd-endpoint
+      - SAGEMAKER_ENDPOINT_MRI=brain-tumor-mri-endpoint
+      - SAGEMAKER_ENDPOINT_NEUROFORMER=neuroformer-endpoint
+      - SAGEMAKER_ENDPOINT_SPECTRA=spectra-sz-endpoint
+    restart: always

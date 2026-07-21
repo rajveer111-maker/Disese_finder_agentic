@@ -1,0 +1,6 @@
+{"timestamp": "2025-10-29T01:45:33.386129", "model": "bci2a_crdae", "dataset": "Motor Imagery", "metrics": {"accuracy": 0.9458333333333333}, "confusion_matrix": [[55, 2, 1, 2], [2, 55, 0, 3], [0, 0, 60, 0], [1, 2, 0, 57]]}
+{"timestamp": "2025-10-29T01:45:33.389764", "model": "eeg_pd", "dataset": "EEG Parkinsons", "metrics": {"accuracy": 0.5}, "confusion_matrix": [[0, 60], [0, 60]]}
+{"timestamp": "2025-10-29T01:45:33.389764", "model": "agentic_system", "dataset": "Unified", "metrics": {"overall_accuracy": 0.7972222222222223}, "total_samples": 360}
+{"timestamp": "2025-10-29T01:48:44.411317", "model": "bci2a_crdae", "dataset": "Motor Imagery", "metrics": {"accuracy": 0.45416666666666666}, "confusion_matrix": [[60, 0, 0, 0], [60, 0, 0, 0], [11, 0, 49, 0], [60, 0, 0, 0]]}
+{"timestamp": "2025-10-29T01:48:44.725298", "model": "eeg_pd", "dataset": "EEG Parkinsons", "metrics": {"accuracy": 0.5}, "confusion_matrix": [[0, 60], [0, 60]]}
+{"timestamp": "2025-10-29T01:48:44.725298", "model": "agentic_system", "dataset": "Unified", "metrics": {"overall_accuracy": 0.46944444444444444}, "total_samples": 360}
