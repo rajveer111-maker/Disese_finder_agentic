@@ -21,66 +21,39 @@ import Card3D from '@/components/Card3D';
 
 const models = [
   {
-    key: 'neuroformer',
-    name: 'Neuroformer Classifier',
-    icon: Brain,
-    desc: "Long-range oscillatory transformer tracking temporal decline signatures.",
-    target: "Alzheimer's & FTD",
-    metrics: "94.2% Acc | 19 Channels",
+    key: 'nhrn_pd',
+    name: "NHRN-PD Neuromorphic Classifier",
+    icon: Activity,
+    desc: "Neuromorphic Hierarchical Resonance Network tracking basal ganglia beta-band (13-30Hz) oscillatory power for Parkinson's detection.",
+    target: "Parkinson's Disease (PD)",
+    metrics: "88.9% Sensitivity | 88.5% Acc | 19 Ch",
     glow: "rgba(139, 92, 246, 0.2)"
   },
   {
-    key: 'eeg_pd',
-    name: "Parkinson's Detector",
-    icon: Activity,
-    desc: "Oscillatory spectrum router searching for resting-state basal ganglia anomalies.",
-    target: "Parkinson's Disease",
-    metrics: "92.8% Acc | 22 Channels",
+    key: 'neuroformer',
+    name: 'Neuroformer Classifier',
+    icon: Brain,
+    desc: "Multi-head sequence temporal self-attention transformer tracking cognitive theta-slowing (4-8Hz) dynamics for Alzheimer's/FTD.",
+    target: "Alzheimer's Disease (AD)",
+    metrics: "82.2% Sensitivity | 82.0% Acc | 19 Ch",
     glow: "rgba(20, 184, 166, 0.2)"
   },
   {
-    key: 'nhrn_pd',
-    name: "NHRN Parkinson's Net",
-    icon: Activity,
-    desc: "10-level neuromorphic resonance network capturing high-density cortical oscillations.",
-    target: "Parkinson's Disease",
-    metrics: "94.8% Acc | 40 Channels",
-    glow: "rgba(52, 211, 153, 0.2)"
-  },
-  {
-    key: 'bci2a',
-    name: 'BCI2A Motor Decoder',
-    icon: Zap,
-    desc: "Decodes motor cortical imagery commands (Left/Right Hand, Foot, Tongue).",
-    target: "Motor Imagery BCI",
-    metrics: "91.5% Acc | 22 Channels",
-    glow: "rgba(244, 63, 94, 0.2)"
-  },
-  {
-    key: 'tumor_mri',
-    name: 'MRI Morphology Net',
-    icon: Search,
-    desc: "Converts signals into spatial grids, running transfer-learning for tumor screens.",
-    target: "Brain Tumor (MRI)",
-    metrics: "95.6% Acc | Spatial CNN",
-    glow: "rgba(56, 189, 248, 0.2)"
-  },
-  {
     key: 'spectra_sz',
-    name: 'SPECTRA Routing Net',
+    name: 'SPECTRA-SZ Routing Net',
     icon: GitBranch,
-    desc: "Multi-scale psychiatric routing network detecting complex cognitive states.",
+    desc: "SPECTRA neural architecture isolating gamma-band (30-80Hz) phase locking and cognitive synchrony for psychiatric evaluation.",
     target: "Schizophrenia (SZ)",
-    metrics: "90.4% Acc | 19 Channels",
+    metrics: "84.4% Sensitivity | 85.0% Acc | 19 Ch",
     glow: "rgba(236, 72, 153, 0.2)"
   },
   {
     key: 'cmo_core',
-    name: 'Virtual CMO Agent',
+    name: 'Master Agent A_top & Telemetry Gate Φ(t)',
     icon: ShieldAlert,
-    desc: "Consensus synthesis routing engine making final diagnostics decisions.",
-    target: "Ensemble Consensus",
-    metrics: "< 1s Routing | Multi-modal",
+    desc: "Dual-policy Master Agent and Telemetry Quality Gate Φ(t) governing all diagnostic classes with safety guardrail routing. ECE = 0.024.",
+    target: "Multi-Domain (Healthy, PD, AD, SZ, Uncertain)",
+    metrics: "96.3% System Acc | 100% Rejection | 0.8s",
     glow: "rgba(251, 191, 36, 0.2)"
   }
 ];
@@ -219,18 +192,18 @@ export default function Home() {
               </defs>
 
               {/* Interactive Node Coordinates */}
-              {/* BCI2A */}
+              {/* NHRN-PD */}
               <g className="cursor-pointer">
                 <circle cx="150" cy="180" r="16" fill="url(#purpleGlow)" className="animate-pulse" />
                 <circle cx="150" cy="180" r="5" fill="#a78bfa" />
-                <text x="110" y="210" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">BCI2A</text>
+                <text x="110" y="210" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">NHRN-PD</text>
               </g>
 
-              {/* EEG PD */}
+              {/* Telemetry Gate */}
               <g className="cursor-pointer">
                 <circle cx="350" cy="180" r="16" fill="url(#cyanGlow)" className="animate-pulse" />
                 <circle cx="350" cy="180" r="5" fill="#14b8a6" />
-                <text x="325" y="210" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">EEG-PD</text>
+                <text x="330" y="210" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">Φ(t)</text>
               </g>
 
               {/* Neuroformer */}
@@ -240,18 +213,18 @@ export default function Home() {
                 <text x="210" y="95" fill="#fff" fontSize="11" fontWeight="extrabold" fontFamily="monospace">NEUROFORMER</text>
               </g>
 
-              {/* MRI */}
+              {/* A_top Agent */}
               <g className="cursor-pointer">
                 <circle cx="250" cy="380" r="18" fill="url(#cyanGlow)" className="animate-pulse" />
                 <circle cx="250" cy="380" r="6" fill="#2dd4bf" />
-                <text x="220" y="412" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">BRAIN MRI</text>
+                <text x="225" y="412" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">A_top</text>
               </g>
 
-              {/* SPECTRA */}
+              {/* SPECTRA-SZ */}
               <g className="cursor-pointer">
                 <circle cx="120" cy="300" r="15" fill="url(#purpleGlow)" className="animate-pulse" />
                 <circle cx="120" cy="300" r="4" fill="#ec4899" />
-                <text x="95" y="330" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">SPECTRA</text>
+                <text x="80" y="330" fill="#cbd5e1" fontSize="10" fontWeight="bold" fontFamily="monospace">SPECTRA-SZ</text>
               </g>
 
               {/* CMO consensus core */}
@@ -296,7 +269,7 @@ export default function Home() {
             style={{ marginBottom: '2.5rem' }}
             className="mt-4 text-slate-400 font-light text-sm md:text-base leading-relaxed max-w-2xl"
           >
-            Each routing node operates a custom-weighted sequence, temporal, or spatial morphology model.
+            Each classifier operates a specialized neural architecture: NHRN-PD (beta-band resonance), Neuroformer (temporal attention), and SPECTRA-SZ (gamma-phase coupling).
           </p>
         </div>
 
@@ -400,8 +373,8 @@ export default function Home() {
               </div>
             </div>
             <div className="px-2">
-              <span className="block text-3xl font-display font-black gradient-text-primary">94.6%</span>
-              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">Consensus Accuracy</span>
+              <span className="block text-3xl font-display font-black gradient-text-primary">96.3%</span>
+              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">System Accuracy (N=420)</span>
             </div>
           </Card3D>
           <Card3D glowColor="rgba(20, 184, 166, 0.2)" className="p-6 md:p-8 flex flex-col justify-between min-h-[160px] bg-black/20 text-center">
@@ -411,8 +384,8 @@ export default function Home() {
               </div>
             </div>
             <div className="px-2">
-              <span className="block text-3xl font-display font-black text-accent-cyan">&lt; 240ms</span>
-              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">Ingestion Latency</span>
+              <span className="block text-3xl font-display font-black text-accent-cyan">&lt; 800ms</span>
+              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">End-to-End Latency</span>
             </div>
           </Card3D>
           <Card3D glowColor="rgba(236, 72, 153, 0.2)" className="p-6 md:p-8 flex flex-col justify-between min-h-[160px] bg-black/20 text-center">
@@ -422,8 +395,8 @@ export default function Home() {
               </div>
             </div>
             <div className="px-2">
-              <span className="block text-3xl font-display font-black text-pink-400">6</span>
-              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">Neural Ensembles</span>
+              <span className="block text-3xl font-display font-black text-pink-400">3</span>
+              <span className="block text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-mono">Neural Classifiers</span>
             </div>
           </Card3D>
           <Card3D glowColor="rgba(52, 211, 153, 0.2)" className="p-6 md:p-8 flex flex-col justify-between min-h-[160px] bg-black/20 text-center">

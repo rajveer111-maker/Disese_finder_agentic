@@ -1,191 +1,147 @@
-# 🧠 Agentic Disease Finder
+﻿# ANDI: Agentic Neurological Disorder Identifier
 
-An intelligent medical diagnosis system that uses advanced machine learning models to analyze medical data and provide accurate disease detection. The system features an agentic decision-making process that automatically selects the most appropriate model based on input data characteristics.
+Official implementation and reference architecture for **ANDI: Agentic Neurological Disorder Identifier**, submitted to *IEEE Transactions on Neural Systems and Rehabilitation Engineering (TNSRE)*.
 
-## 🎯 Features
+---
 
-- **Agentic Decision Making**: Automatically selects the most appropriate model based on input data
-- **Multi-modal Analysis**: Supports both EEG signals and medical images
-- **Real-time Visualization**: Interactive charts and graphs for better understanding
-- **Confidence Scoring**: Provides reliability metrics for each prediction
-- **Modern UI**: Beautiful Streamlit-based web interface
+## 🔬 System Architecture
 
-## 🧠 Available Models
+ANDI introduces a multi-tier agentic decision architecture for autonomous, robust routing and diagnosis of neurological disorders from resting-state and task-induced electroencephalography (EEG):
 
-### 1. BCI2A CRDAE Model
-- **Purpose**: Motor imagery classification for Brain-Computer Interface applications
-- **Input**: EEG signals (BCI Competition IIa dataset format)
-- **Output**: Motor imagery class predictions (Left Hand, Right Hand, Foot, Tongue)
-- **Applications**: Brain-computer interfaces, rehabilitation, motor control
+$$\mathcal{A}_{\text{top}} = \langle \mathcal{S}, \mathcal{A}, \mathcal{K}, \pi_{\text{top}}, \mathcal{C}_{\text{CMO}} \rangle$$
 
-### 2. EEG Parkinson's Disease Detection
-- **Purpose**: Early Parkinson's disease detection from EEG signals
-- **Input**: EEG signals from patients
-- **Output**: Disease probability and classification (Healthy, Parkinson's Disease)
-- **Applications**: Clinical diagnosis, screening, early detection
+```
+                         Incoming Multichannel EEG Record
+                                        │
+                                        ▼
+                      ┌───────────────────────────────────┐
+                      │    Signal Telemetry Extraction    │
+                      │  Duration, Channels, Noise σ, PSD │
+                      └─────────────────┬─────────────────┘
+                                        │
+                                        ▼
+                      ┌───────────────────────────────────┐
+                      │    Spectral Quality Gate Φ(t)     │
+                      │   σ > 0.01 μV  and  H_spec ≥ 0.22 │
+                      └───────┬───────────────────┬───────┘
+                     Passed   │                   │ Rejected
+                              ▼                   ▼
+     ┌────────────────────────────────────┐    ┌───────────────────────────┐
+     │ Dual-Branch Soft Routing Policy    │    │ Out-of-Distribution Guard │
+     │  Branch A: Clinical RAG Policy     │    │    γ_guard = 1            │
+     │  Branch B: Normalized Heuristic    │    │    Action = M_null        │
+     └─────────────────┬──────────────────┘    └───────────────────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────┐
+        │  Specialized Neural Engines  │
+        ├──────────────┬───────────────┤
+        │ NHRN-PD      │ Parkinson's   │
+        │ Neuroformer  │ Alzheimer's   │
+        │ SPECTRA-SZ   │ Schizophrenia │
+        │ Baseline     │ Healthy Ctrl  │
+        └──────────────┴───────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────┐
+        │   Virtual CMO Consensus      │
+        │   Δ_conflict Evaluation      │
+        └──────────────────────────────┘
+```
+
+---
+
+## 📐 Mathematical Formulation
+
+### 1. Spectral Quality Gate $\Phi(\mathbf{t})$
+Degraded or ungrounded recordings are filtered prior to deep inference:
+$$\Phi(\mathbf{t}) = \mathbb{I}(\sigma > 0.01\,\mu\text{V}) \cdot \mathbb{I}(H_{\text{spec}} \ge 0.22)$$
+where $H_{\text{spec}} = -\frac{1}{\ln K}\sum_{k=1}^K p_k \ln p_k$ represents broadband spectral entropy derived from Welch power spectral density.
+
+### 2. Dual-Branch Soft Routing Policy $\pi_{\text{top}}$
+Continuous arbitration between the clinical RAG policy ($\pi_{\text{top}}^{\text{RAG}}$) and normalized heuristic engine ($\pi_{\text{top}}^{\text{Heur}}$) is modulated by referral note ambiguity $\alpha_{\text{ambig}} \in [0, 1]$:
+$$\lambda(\alpha_{\text{ambig}}) = \frac{1}{1 + \exp\left(7(\alpha_{\text{ambig}} - 0.50)\right)}$$
+
+The heuristic utility score $U(m \mid \mathbf{s}_t)$ evaluates candidate models across four calibrated rules:
+$$U(m \mid \mathbf{s}_t) = \sum_{j=1}^4 w_j R_j(m, \mathbf{s}_t)$$
+with fixed clinical hyperparameter weights $\mathbf{w} = [0.25, 0.25, 0.30, 0.20]^\top$:
+* **$R_1(m, \mathbf{s}_t) \in [0, 1]$**: Format support (1.0 for EDF/BDF/CSV/NPY, 0.8 for TXT).
+* **$R_2(m, \mathbf{s}_t) = \min(1.0, C_{\text{active}} / C_{\text{target}}^{(m)})$**: Lead dimension compliance ($C_{\text{target}} \in \{19, 22\}$).
+* **$R_3(m, \mathbf{s}_t) \in [0, 1]$**: Semantic clinical keyword and diagnosis matching.
+* **$R_4(H_{\text{spec}}, C_{\text{active}}) = \min(1.0, 0.60 H_{\text{spec}} + 0.40(C_{\text{active}} / 64))$**: Spectral complexity and electrode density.
+
+### 3. Virtual CMO Disagreement Resolution $\mathcal{C}_{\text{CMO}}$
+Inter-classifier predictive divergence across the ensemble is quantified by:
+$$\Delta_{\text{conflict}} = \max_{m} p(y \mid \mathbf{x}, m) - \min_{m} p(y \mid \mathbf{x}, m)$$
+When $\Delta_{\text{conflict}} > 0.40$ or $H_{\text{spec}} < 0.35$, the safety guardrail flag $\gamma_{\text{guard}} = 1$ is activated, prompting clinical review.
+
+---
+
+## 🧠 Specialized Diagnostic Engines
+
+| Model | Target Disorder | Key Neural Mechanism | Nominal Input |
+|---|---|---|---|
+| **NHRN-PD** | Parkinson's Disease | Neuromorphic Hierarchical Resonance Network; basal ganglia beta-band coupling | 40 × 1024 / 22-ch |
+| **Neuroformer** | Alzheimer's Disease | Temporal sequence self-attention modeling synaptic decoupling | 19 × 2500 |
+| **SPECTRA-SZ** | Schizophrenia | Cognitive task phase-locking in task-induced gamma oscillations | 19 × 1024 |
+| **Healthy Control** | Baseline Physiology | Broadband spectral regularity and stable background rhythms | 19 × 2500 |
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Python 3.8 or higher
-- pip package manager
-
 ### Installation
+```bash
+# Clone the repository
+git clone https://github.com/rajveer111-maker/Disese_finder_agentic.git
+cd Disese_finder_agentic
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd AgenticDiseaseFinder
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the application**
-   ```bash
-   streamlit run app.py
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:8501`
-
-## 📊 Usage
-
-### 1. Upload Data
-- Go to the "Upload & Analyze" tab
-- Upload your medical data:
-  - **EEG Data**: CSV, TXT, or EDF files
-  - **Medical Images**: PNG, JPG, or JPEG files
-
-### 2. Automatic Analysis
-- The agentic system will automatically:
-  - Analyze your data characteristics
-  - Select the most appropriate model
-  - Provide reasoning for the selection
-  - Run the analysis
-
-### 3. View Results
-- Check the "Results" tab for:
-  - Prediction results with confidence scores
-  - Interactive visualizations
-  - Model reasoning and explanations
-  - Export options
-
-## 🔧 Configuration
-
-### Model Settings
-- **Model Selection**: Choose which models to use
-- **Confidence Threshold**: Set minimum confidence level for predictions
-- **Model Status**: View which models are loaded and ready
-
-### Data Processing
-- **EEG Preprocessing**: Automatic filtering, normalization, and feature extraction
-- **Image Preprocessing**: Resizing, contrast enhancement, and normalization
-
-## 📁 Project Structure
-
-```
-AgenticDiseaseFinder/
-├── app.py                          # Main Streamlit application
-├── requirements.txt                # Python dependencies
-├── README.md                      # This file
-├── models/                        # Model files and management
-│   ├── __init__.py
-│   ├── model_manager.py           # Model loading and inference
-│   ├── agentic_decision.py        # Agentic decision system
-│   ├── bci2a_crdae_gtaa_best_weights.weights.h5
-│   └── best_eeg_pd_model.h5
-├── utils/                         # Utility functions
-│   ├── __init__.py
-│   ├── preprocessing.py           # Data preprocessing
-│   └── visualization.py           # Visualization helpers
-└── papers/                        # Research papers
-    ├── AutomatedpostureadjustmentsystemforimmobilizedpatientsusingEEGsignals.pdf
-    └── PD_Conf.pdf
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## 🧪 Supported Data Formats
+### Running the API Server
+```bash
+uvicorn api:app --host 127.0.0.1 --port 8000 --reload
+```
 
-### EEG Data
-- **CSV**: Comma-separated values with EEG channels
-- **TXT**: Text files with space or comma-separated values
-- **EDF**: European Data Format (basic support)
+### Diagnostic Ingestion Example (Python)
+```python
+import numpy as np
+from models.agentic_decision import AgenticDecisionSystem
 
-### Medical Images
-- **PNG**: Portable Network Graphics
-- **JPG/JPEG**: Joint Photographic Experts Group
+# Initialize master agent
+agent = AgenticDecisionSystem()
 
-## 🔬 Technical Details
+# Synthetic 19-channel EEG epoch (10 seconds @ 250 Hz)
+eeg_epoch = np.random.randn(2500, 19)
 
-### Model Architectures
-- **BCI2A CRDAE**: Convolutional Recurrent Deep Autoencoder
-- **EEG PD Detection**: Deep CNN with attention mechanisms
+# Execute agentic routing
+decision = agent.decide_model(
+    data=eeg_epoch,
+    file_type="edf",
+    referral_text="Resting tremor, suspected basal ganglia pathology",
+    alpha_ambig=0.30
+)
 
-### Preprocessing Pipeline
-1. **Data Loading**: Support for multiple file formats
-2. **Quality Assessment**: Signal quality evaluation
-3. **Filtering**: Bandpass filtering (1-40 Hz)
-4. **Normalization**: Z-score normalization
-5. **Feature Extraction**: Statistical and spectral features
+print(f"Selected Model: {decision['selected_model']}")
+print(f"Confidence (tau): {decision['tau_route']}")
+print(f"Quality Gate Phi(t): {decision['phi_gate']}")
+print(f"Guardrail Flag gamma_guard: {decision['gamma_guard']}")
+print(f"Broadband Spectral Entropy H_spec: {decision['telemetry']['h_spec']:.4f}")
+```
 
-### Agentic Decision Process
-1. **File Type Analysis**: Check compatibility with models
-2. **Data Characteristics**: Analyze channels, duration, quality
-3. **Use Case Context**: Consider application domain
-4. **Confidence Estimation**: Predict model performance
-5. **Final Selection**: Choose optimal model
+---
 
-## 📈 Performance Metrics
+## 📄 IEEE Reference & Citation
 
-- **Model Accuracy**: >90% on test datasets
-- **Inference Speed**: <1 second for typical EEG data
-- **Confidence Calibration**: Well-calibrated probability estimates
-- **Robustness**: Handles various data qualities and formats
-
-## 🛠️ Development
-
-### Adding New Models
-1. Add model file to `models/` directory
-2. Update `ModelManager` class in `models/model_manager.py`
-3. Add model capabilities to `AgenticDecisionSystem`
-4. Test with sample data
-
-### Customizing Preprocessing
-1. Modify `EEGPreprocessor` in `utils/preprocessing.py`
-2. Add new preprocessing steps
-3. Update visualization functions
-
-### Extending UI
-1. Add new tabs in `app.py`
-2. Create new visualization functions
-3. Update CSS styling
-
-## ⚠️ Disclaimer
-
-This tool is for research and educational purposes only. It should not be used as a substitute for professional medical diagnosis or treatment. Always consult with qualified healthcare professionals for medical decisions.
-
-## 📚 Research Background
-
-This application is based on cutting-edge research in:
-- Brain-Computer Interfaces (BCI)
-- EEG signal processing
-- Deep learning for medical diagnosis
-- Agentic AI systems
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- BCI Competition IIa dataset
-- Parkinson's disease research community
-- Open source machine learning libraries
-- Streamlit team for the excellent framework
+If you use this codebase or architecture in your research, please cite:
+```bibtex
+@article{andi_ieee_tnsre_2026,
+  title={Autonomous Ingestion, Dynamic Routing, and Clinical Consensus in Multi-Disorder Neurological EEG Analysis: An Agentic System},
+  author={ANDI Research Consortium},
+  journal={IEEE Transactions on Neural Systems and Rehabilitation Engineering},
+  year={2026},
+  note={Under Peer Review}
+}
+```

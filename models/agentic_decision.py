@@ -1,277 +1,311 @@
+"""
+ANDI: Agentic Neurological Disorder Identifier
+Master Orchestration Agent Policy Architecture -- A_top
+
+Implements the agentic decision-policy formulation:
+    A_top = <S, A, K, pi_top, C_CMO>
+
+This module implements:
+  - Telemetry feature extraction and spectral entropy gate Phi(t)
+  - Policy Utility Score U(m|s_t) with four sub-rules R1..R4  [w = 0.25,0.25,0.30,0.20]
+  - Sigmoid lambda gate for RAG / Heuristic branch mixing
+  - Diagnostic uncertainty score delta_conflict for Virtual CMO
+  - 5-class action space: {M_HC, M_PD, M_AD, M_SZ, empty_unroutable}
+
+Reference: ANDI IEEE TNSRE Submission, Section II-C
+"""
+
 import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple, Optional
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Constants matching paper formulation
+# ─────────────────────────────────────────────────────────────────────────────
+
+VALID_CHANNEL_COUNTS = {8, 16, 19, 32, 40, 64}
+C_MAX = 64          # R4 normalisation denominator
+
+SIGMA_MIN   = 0.01  # µV flatline threshold
+H_SPEC_MIN  = 0.22  # Minimum spectral entropy for valid signal
+H_SPEC_HIGH = 0.70  # Healthy broadband floor
+
+W1, W2, W3, W4 = 0.25, 0.25, 0.30, 0.20  # Heuristic branch weights
+SIGMOID_K  = 7.0
+SIGMOID_A0 = 0.50
+
+DELTA_CONFLICT_THRESHOLD = 0.40
+
+M_HC   = "healthy_control"
+M_PD   = "nhrn_pd"
+M_AD   = "neuroformer"
+M_SZ   = "spectra_sz"
+M_NULL = "uncertain"
+
+CLINICAL_KEYWORDS: Dict[str, List[str]] = {
+    M_HC: ["healthy", "control", "normal", "cognitively normal", "cn", "baseline", "routine"],
+    M_PD: ["parkinson", "pd", "tremor", "beta", "basal ganglia", "dopaminergic", "motor", "resonance"],
+    M_AD: ["alzheimer", "ad", "dementia", "ftd", "frontotemporal", "theta", "synaptic", "cognitive decline"],
+    M_SZ: ["schizophrenia", "sz", "psychosis", "gamma", "phase coupling", "auditory", "hallucination"],
+}
+
+C_TARGET: Dict[str, int] = {M_HC: 19, M_PD: 22, M_AD: 19, M_SZ: 19}
+
+FORMAT_SUPPORT: Dict[str, List[str]] = {
+    M_HC: ["csv","txt","npy","edf","bdf"],
+    M_PD: ["csv","txt","npy","edf","bdf"],
+    M_AD: ["csv","txt","npy","edf","bdf"],
+    M_SZ: ["csv","txt","npy","edf","bdf"],
+}
+
+ALL_MODELS = [M_HC, M_PD, M_AD, M_SZ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Telemetry Feature Extraction
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_telemetry(data: np.ndarray, fs: float = 250.0) -> Dict[str, Any]:
+    """Compute telemetry vector t = [D, sigma, n_hat, H_spec, C_active]."""
+    if data.ndim == 1:
+        data = data.reshape(-1, 1)
+    if data.shape[0] < data.shape[1]:
+        data = data.T  # (channels, samples) -> (samples, channels)
+    n_samples, n_channels = data.shape
+    duration  = n_samples / fs
+    sigma     = float(np.std(data))
+    noise_hat = float(np.mean(np.sum(np.abs(np.diff(data, axis=0)), axis=1))) if n_samples > 1 else 0.0
+    h_spec    = _compute_spectral_entropy(data, fs)
+    c_active  = _resolve_channel_count(n_channels)
+    return dict(duration=duration, sigma=sigma, noise_hat=noise_hat,
+                h_spec=h_spec, c_active=c_active, shape=data.shape)
+
+
+def _compute_spectral_entropy(data: np.ndarray, fs: float) -> float:
+    """H_spec = -sum_f P(f) log2 P(f) / log2(F)  averaged over channels."""
+    try:
+        n = data.shape[0]
+        freqs = np.fft.rfftfreq(n, d=1.0 / fs)
+        band  = (freqs >= 0.5) & (freqs <= 50.0)
+        if not np.any(band):
+            return 0.0
+        psd = np.abs(np.fft.rfft(data, axis=0))[band, :] ** 2
+        entropies = []
+        for ch in range(psd.shape[1]):
+            p = psd[:, ch]; total = p.sum()
+            if total < 1e-12: entropies.append(0.0); continue
+            p = np.clip(p / total, 1e-12, 1.0)
+            F = len(p)
+            entropies.append(float(np.clip(-np.sum(p * np.log2(p)) / np.log2(F), 0.0, 1.0)))
+        return float(np.mean(entropies)) if entropies else 0.0
+    except Exception as e:
+        logger.warning(f"H_spec failed: {e}"); return 0.0
+
+
+def _resolve_channel_count(n: int) -> int:
+    return n if n in VALID_CHANNEL_COUNTS else min(VALID_CHANNEL_COUNTS, key=lambda c: abs(c - n))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Telemetry Quality Gate  Phi(t)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def quality_gate(telemetry: Dict[str, Any]) -> int:
+    """Phi(t) = I(sigma > 0.01) * I(H_spec >= 0.22). Returns 1=valid, 0=reject."""
+    return 1 if (telemetry["sigma"] > SIGMA_MIN and telemetry["h_spec"] >= H_SPEC_MIN) else 0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Heuristic Policy Sub-Rules R1..R4
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _r1(model: str, file_type: str) -> float:
+    ft = file_type.lower().lstrip(".")
+    if ft in ("edf","bdf","csv","npy"): return 1.0
+    if ft == "txt": return 0.8
+    return 0.6 if ft in FORMAT_SUPPORT.get(model, []) else 0.0
+
+def _r2(model: str, c_active: int) -> float:
+    return float(min(1.0, c_active / C_TARGET.get(model, 19)))
+
+def _r3(model: str, referral: Any) -> float:
+    if isinstance(referral, dict):
+        text = " ".join(str(v) for v in referral.values()).lower()
+    else:
+        text = str(referral or "").lower()
+    kws = CLINICAL_KEYWORDS.get(model, [])
+    if not kws:
+        return 0.0
+    matched = [k for k in kws if k in text]
+    if len(matched) >= 2:
+        return 1.0
+    elif len(matched) == 1:
+        return 0.90
+    return 0.0
+
+def _r4(h_spec: float, c_active: int) -> float:
+    return float(min(1.0, max(0.0, 0.60 * h_spec + 0.40 * (c_active / C_MAX))))
+
+
+def compute_utility_score(model: str, file_type: str, c_active: int,
+                           h_spec: float, referral: str) -> Tuple[float, Dict]:
+    """U(m|s_t) = W1*R1 + W2*R2 + W3*R3 + W4*R4."""
+    r1,r2,r3,r4 = _r1(model,file_type), _r2(model,c_active), _r3(model,referral), _r4(h_spec,c_active)
+    score = float(np.clip(W1*r1 + W2*r2 + W3*r3 + W4*r4, 0.0, 1.0))
+    return score, {"w1_R1": round(W1*r1,4), "w2_R2": round(W2*r2,4),
+                   "w3_R3": round(W3*r3,4), "w4_R4": round(W4*r4,4)}
+
+
+def heuristic_routing(file_type: str, telemetry: Dict, referral: str,
+                      threshold: float = 0.50) -> Tuple[str, float, Dict]:
+    """pi_top^Heur — returns (best_model, score, all_scores)."""
+    scores = {}
+    for m in ALL_MODELS:
+        u, _ = compute_utility_score(m, file_type, telemetry["c_active"], telemetry["h_spec"], referral)
+        scores[m] = u
+    best = max(scores, key=lambda m: scores[m])
+    return (M_NULL, scores[best], scores) if scores[best] < threshold else (best, scores[best], scores)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sigmoid Lambda Gate
+# ─────────────────────────────────────────────────────────────────────────────
+
+def lambda_rag(alpha_ambig: float) -> float:
+    """lambda(alpha) = 1 / (1 + exp(7*(alpha - 0.5)))  in [0,1]."""
+    return float(1.0 / (1.0 + np.exp(SIGMOID_K * (alpha_ambig - SIGMOID_A0))))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Virtual CMO Diagnostic Uncertainty Score
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_delta_conflict(probs: Dict[str, float], epsilon: float = 1e-8) -> float:
+    """delta_conflict = 1 - max(p_m) / (sum(p_m) + eps)  ~= 1 - max(p_m)."""
+    if not probs: return 1.0
+    v = np.array(list(probs.values()), dtype=float)
+    return float(1.0 - v.max() / (v.sum() + epsilon))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AgenticDecisionSystem — Main Class
+# ─────────────────────────────────────────────────────────────────────────────
+
 class AgenticDecisionSystem:
     """
-    Agentic system that intelligently decides which model to use based on input data characteristics.
+    Master Orchestration Agent  A_top = <S, A, K, pi_top, C_CMO>
+
+    Routing policy:
+        pi_top(a_t|s_t) = lambda(alpha)*P_RAG + (1-lambda(alpha))*P_Heur
+
+    In offline/no-Bedrock mode use_rag=False: lambda forced to 0 (heuristic only).
     """
-    
-    def __init__(self):
-        self.model_capabilities = {
-            'bci2a_crdae': {
-                'data_types': ['eeg', 'csv', 'txt'],
-                'channels_range': (16, 64),
-                'sample_rate_range': (100, 1000),
-                'duration_range': (1, 10),  # seconds
-                'use_cases': ['motor_imagery', 'bci', 'rehabilitation'],
-                'confidence_threshold': 0.6
-            },
-            'eeg_pd': {
-                'data_types': ['eeg', 'csv', 'txt', 'edf'],
-                'channels_range': (16, 64),
-                'sample_rate_range': (100, 1000),
-                'duration_range': (2, 30),  # seconds
-                'use_cases': ['parkinsons', 'neurological', 'clinical'],
-                'confidence_threshold': 0.7
-            },
-            'neuroformer': {
-                'data_types': ['eeg', 'csv', 'txt', 'npy', 'edf'],
-                'channels_range': (10, 64),
-                'sample_rate_range': (100, 1000),
-                'duration_range': (2, 30),  # seconds
-                'use_cases': ['alzheimer', 'dementia', 'ftd', 'cognitive', 'neurological'],
-                'confidence_threshold': 0.75
-            },
-            'nhrn_pd': {
-                'data_types': ['eeg', 'csv', 'txt', 'npy', 'edf'],
-                'channels_range': (8, 64),
-                'sample_rate_range': (100, 1000),
-                'duration_range': (2, 30),  # seconds
-                'use_cases': ['parkinsons', 'neurological', 'clinical', 'resonance'],
-                'confidence_threshold': 0.8
+
+    def __init__(self, use_rag: bool = False):
+        self.use_rag = use_rag
+        logger.info(f"AgenticDecisionSystem | RAG={'ON' if use_rag else 'HEURISTIC-ONLY'}")
+
+    def decide_model(self, data: np.ndarray, file_type: str,
+                     referral_text: str = "", alpha_ambig: float = 0.50,
+                     fs: float = 250.0) -> Dict[str, Any]:
+        """Full A_top pipeline. Returns routing decision dict."""
+
+        # Step 1 — Telemetry
+        telem = extract_telemetry(data, fs=fs)
+        logger.info(f"σ={telem['sigma']:.4f}  H_spec={telem['h_spec']:.3f}  C={telem['c_active']}  D={telem['duration']:.1f}s")
+
+        # Step 2 — Quality gate Phi(t)
+        phi = quality_gate(telem)
+        if phi == 0:
+            reason = (f"REJECTED by Phi(t)=0: sigma={telem['sigma']:.4f}<=0.01 "
+                      f"or H_spec={telem['h_spec']:.3f}<0.22. gamma_guard=1.")
+            logger.warning(reason)
+            data_chars = {
+                'shape': list(data.shape),
+                'channels': int(telem['c_active']),
+                'samples': int(data.shape[0]),
+                'duration_estimate': float(telem['duration']),
+                'signal_quality': 'low (rejected by Phi(t))'
             }
-        }
-        
-        self.decision_rules = [
-            self._rule_file_type,
-            self._rule_data_characteristics,
-            self._rule_use_case_context,
-            self._rule_confidence_estimation
-        ]
-    
-    def decide_model(self, data: np.ndarray, file_type: str, 
-                    context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Decide which model to use based on input data and context.
-        
-        Args:
-            data: Input data array
-            file_type: Type of input file
-            context: Additional context information
-            
-        Returns:
-            Dictionary containing decision results
-        """
-        if context is None:
-            context = {}
-        
-        # Calculate data characteristics
-        data_characteristics = self._analyze_data_characteristics(data)
-        
-        # Apply decision rules
-        scores = {key: 0.0 for key in self.model_capabilities.keys()}
-        reasoning = []
-        
-        for rule in self.decision_rules:
-            rule_scores, rule_reasoning = rule(data, file_type, data_characteristics, context)
-            for k, v in rule_scores.items():
-                scores[k] += v
-            reasoning.extend(rule_reasoning)
-            
-        num_rules = len(self.decision_rules)
-        for k in scores:
-            scores[k] /= num_rules
-        
-        # Select best model
-        best_model = max(scores.keys(), key=lambda k: scores[k])
-        confidence = scores[best_model]
-        
-        # Generate final reasoning
-        final_reasoning = self._generate_final_reasoning(
-            best_model, confidence, reasoning, data_characteristics
-        )
-        
-        return {
-            'selected_model': best_model,
-            'confidence': confidence,
-            'reasoning': final_reasoning,
-            'all_scores': scores,
-            'data_characteristics': data_characteristics
-        }
-    
-    def _analyze_data_characteristics(self, data: np.ndarray) -> Dict[str, Any]:
-        """Analyze characteristics of the input data."""
-        characteristics = {
-            'shape': data.shape,
-            'channels': data.shape[1] if len(data.shape) > 1 else 1,
-            'samples': data.shape[0],
-            'duration_estimate': data.shape[0] / 250,  # Assuming 250Hz sampling rate
-            'data_type': 'eeg',  # Default assumption
-            'has_variation': np.std(data) > 0.1,
-            'signal_quality': self._assess_signal_quality(data)
-        }
-        
-        return characteristics
-    
-    def _assess_signal_quality(self, data: np.ndarray) -> str:
-        """Assess the quality of the EEG signal."""
-        if len(data.shape) == 1:
-            data = data.reshape(-1, 1)
-        
-        # Calculate signal quality metrics
-        signal_power = np.mean(np.var(data, axis=0))
-        noise_level = np.mean(np.abs(np.diff(data, axis=0)))
-        
-        if signal_power > 1.0 and noise_level < 0.5:
-            return 'high'
-        elif signal_power > 0.5 and noise_level < 1.0:
-            return 'medium'
+            return {"selected_model": M_NULL, "tau_route": 0.0, "gamma_guard": 1,
+                    "telemetry": telem, "phi_gate": 0, "lambda_rag": lambda_rag(alpha_ambig),
+                    "utility_scores": {}, "reasoning": reason, "confidence": 0.0, "all_scores": {},
+                    "data_characteristics": data_chars}
+
+        # Step 3 — Lambda mixing weight
+        lam = lambda_rag(alpha_ambig)
+        lam_h = 1.0 - lam
+
+        # Step 4 — Heuristic branch
+        h_model, h_score, utility_scores = heuristic_routing(file_type, telem, referral_text)
+
+        # Step 5 — RAG branch (stub when Bedrock unavailable)
+        if self.use_rag and lam > 0.05:
+            r_model, r_conf = self._rag_stub(referral_text, telem)
         else:
-            return 'low'
-    
-    def _rule_file_type(self, data: np.ndarray, file_type: str, 
-                       characteristics: Dict[str, Any], context: Dict[str, Any]) -> tuple:
-        """Rule based on file type compatibility."""
-        scores = {}
-        reasoning = []
-        
-        for model_key, capabilities in self.model_capabilities.items():
-            if file_type.lower() in capabilities['data_types']:
-                scores[model_key] = 0.8
-                reasoning.append(f"OK {model_key} supports {file_type} files")
-            else:
-                scores[model_key] = 0.2
-                reasoning.append(f"WARNING {model_key} has limited support for {file_type} files")
-        
-        return scores, reasoning
-    
-    def _rule_data_characteristics(self, data: np.ndarray, file_type: str,
-                                 characteristics: Dict[str, Any], context: Dict[str, Any]) -> tuple:
-        """Rule based on data characteristics compatibility."""
-        scores = {}
-        reasoning = []
-        
-        channels = characteristics['channels']
-        duration = characteristics['duration_estimate']
-        signal_quality = characteristics['signal_quality']
-        
-        for model_key, capabilities in self.model_capabilities.items():
-            score = 0.5  # Base score
-            
-            # Check channel compatibility
-            min_channels, max_channels = capabilities['channels_range']
-            if min_channels <= channels <= max_channels:
-                score += 0.2
-                reasoning.append(f"OK {model_key} supports {channels} channels")
-            else:
-                score -= 0.1
-                reasoning.append(f"WARNING {model_key} expects {min_channels}-{max_channels} channels, got {channels}")
-            
-            # Check duration compatibility
-            min_duration, max_duration = capabilities['duration_range']
-            if min_duration <= duration <= max_duration:
-                score += 0.2
-                reasoning.append(f"OK {model_key} works well with {duration:.1f}s duration")
-            else:
-                score -= 0.1
-                reasoning.append(f"WARNING {model_key} expects {min_duration}-{max_duration}s, got {duration:.1f}s")
-            
-            # Check signal quality
-            if signal_quality == 'high':
-                score += 0.1
-                reasoning.append(f"OK High quality signal detected")
-            elif signal_quality == 'low':
-                score -= 0.1
-                reasoning.append(f"WARNING Low quality signal detected")
-            
-            scores[model_key] = max(0.0, min(1.0, score))
-        
-        return scores, reasoning
-    
-    def _rule_use_case_context(self, data: np.ndarray, file_type: str,
-                             characteristics: Dict[str, Any], context: Dict[str, Any]) -> tuple:
-        """Rule based on use case context."""
-        scores = {}
-        reasoning = []
-        
-        # Check for keywords in context that might indicate use case
-        context_text = str(context).lower()
-        
-        for model_key, capabilities in self.model_capabilities.items():
-            score = 0.5  # Base score
-            
-            for use_case in capabilities['use_cases']:
-                if use_case in context_text:
-                    score += 0.3
-                    reasoning.append(f"OK Context suggests {use_case} use case for {model_key}")
-                    break
-            
-            scores[model_key] = score
-        
-        return scores, reasoning
-    
-    def _rule_confidence_estimation(self, data: np.ndarray, file_type: str,
-                                  characteristics: Dict[str, Any], context: Dict[str, Any]) -> tuple:
-        """Rule based on estimated confidence for each model."""
-        scores = {}
-        reasoning = []
-        
-        for model_key, capabilities in self.model_capabilities.items():
-            # Estimate confidence based on data quality and compatibility
-            base_confidence = capabilities['confidence_threshold']
-            
-            # Adjust based on signal quality
-            signal_quality = characteristics['signal_quality']
-            if signal_quality == 'high':
-                confidence = base_confidence + 0.2
-            elif signal_quality == 'medium':
-                confidence = base_confidence
-            else:
-                confidence = base_confidence - 0.2
-            
-            # Adjust based on data characteristics match
-            channels = characteristics['channels']
-            min_channels, max_channels = capabilities['channels_range']
-            if min_channels <= channels <= max_channels:
-                confidence += 0.1
-            
-            scores[model_key] = max(0.0, min(1.0, confidence))
-            reasoning.append(f"Estimated confidence for {model_key}: {confidence:.2f}")
-        
-        return scores, reasoning
-    
-    def _generate_final_reasoning(self, selected_model: str, confidence: float,
-                                reasoning: List[str], characteristics: Dict[str, Any]) -> str:
-        """Generate final reasoning text."""
-        reasoning_parts = [
-            f"Selected {selected_model} model with {confidence:.1%} confidence.",
-            f"Data characteristics: {characteristics['channels']} channels, "
-            f"{characteristics['duration_estimate']:.1f}s duration, "
-            f"{characteristics['signal_quality']} quality signal.",
-            "Key factors:"
-        ]
-        
-        # Add relevant reasoning points
-        relevant_reasons = [r for r in reasoning if selected_model in r or '✅' in r]
-        reasoning_parts.extend(relevant_reasons[:3])  # Limit to top 3 reasons
-        
-        return " ".join(reasoning_parts)
-    
+            r_model, r_conf = h_model, h_score
+
+        # Step 6 — Mixture decision
+        if r_model == h_model:
+            selected = r_model
+            tau = float(lam * r_conf + lam_h * h_score)
+        else:
+            selected, tau = (r_model, r_conf) if lam >= lam_h else (h_model, h_score)
+
+        gamma = 0
+        if selected == M_NULL or tau < 0.50:
+            selected, gamma = M_NULL, 1
+
+        reasoning = (f"Routing->{selected.upper()} tau={tau:.3f} | "
+                     f"sigma={telem['sigma']:.4f} H_spec={telem['h_spec']:.3f} "
+                     f"C={telem['c_active']} | alpha={alpha_ambig:.2f} "
+                     f"lam_RAG={lam:.3f} lam_Heur={lam_h:.3f} | "
+                     f"U({selected})={utility_scores.get(selected,0):.4f}")
+
+        data_chars = {
+            'shape': list(data.shape),
+            'channels': int(telem['c_active']),
+            'samples': int(data.shape[0]),
+            'duration_estimate': float(telem['duration']),
+            'signal_quality': 'high' if telem['h_spec'] >= 0.35 and telem['sigma'] > 0.01 else 'medium'
+        }
+        return {"selected_model": selected, "tau_route": round(tau,4),
+                "gamma_guard": gamma, "telemetry": telem, "phi_gate": phi,
+                "lambda_rag": round(lam,4), "utility_scores": utility_scores,
+                "reasoning": reasoning, "confidence": round(tau,4),
+                "all_scores": {k: round(v,4) for k,v in utility_scores.items()},
+                "data_characteristics": data_chars}
+
+    def cmo_synthesis(self, predictions: Dict[str, Dict[str, float]],
+                      telemetry: Dict[str, Any]) -> Dict[str, Any]:
+        """Virtual CMO delta_conflict scoring and conflict detection."""
+        per_model_conf, per_model_pred = {}, {}
+        for mk, cp in predictions.items():
+            if not cp: continue
+            bc = max(cp, key=cp.get)
+            per_model_conf[mk] = float(cp[bc])
+            per_model_pred[mk] = bc
+        delta = compute_delta_conflict(per_model_conf)
+        gamma = 1 if (delta > DELTA_CONFLICT_THRESHOLD or telemetry.get("h_spec",1.0) < H_SPEC_MIN) else 0
+        dom = max(per_model_conf, key=lambda m: per_model_conf[m]) if per_model_conf else M_NULL
+        return {"delta_conflict": round(delta,4), "gamma_guard": gamma,
+                "dominant_model": dom, "dominant_class": per_model_pred.get(dom,"Uncertain"),
+                "confidence": round(per_model_conf.get(dom,0.0),4),
+                "per_model_conf": {k:round(v,4) for k,v in per_model_conf.items()},
+                "per_model_pred": per_model_pred}
+
+    def _rag_stub(self, referral: str, telem: Dict) -> Tuple[str, float]:
+        """Stub for f_Claude(e_q, G, t). Replace with Bedrock call in production."""
+        scores = {m: _r3(m, referral) for m in ALL_MODELS}
+        best = max(scores, key=lambda m: scores[m])
+        return (best, scores[best]) if scores[best] > 0 else (M_HC, 0.5)
+
+    # Legacy compatibility
     def get_model_recommendations(self, use_case: str) -> List[Dict[str, Any]]:
-        """Get model recommendations for a specific use case."""
-        recommendations = []
-        
-        for model_key, capabilities in self.model_capabilities.items():
-            if use_case.lower() in [uc.lower() for uc in capabilities['use_cases']]:
-                recommendations.append({
-                    'model': model_key,
-                    'suitability': 'high',
-                    'description': capabilities.get('description', ''),
-                    'confidence_threshold': capabilities['confidence_threshold']
-                })
-        
-        return recommendations
+        return [{"model": m, "suitability": "high", "confidence_threshold": 0.01}
+                for m, kws in CLINICAL_KEYWORDS.items()
+                if any(use_case.lower() in kw for kw in kws)]

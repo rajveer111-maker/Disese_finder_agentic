@@ -35,8 +35,8 @@ const systemNodes = [
   {
     phase: '4. Model Ensembles',
     title: 'Parallel Neural Classifiers',
-    desc: 'Routes preprocessed matrices to all online networks (Neuroformer, EEG-PD, BCI2A, MRI, SPECTRA) in parallel.',
-    tech: 'PyTorch / Keras / TensorFlow DirectML'
+    desc: 'Routes preprocessed matrices to all online networks (NHRN-PD, Neuroformer, SPECTRA-SZ) in parallel.',
+    tech: 'PyTorch / AWS Bedrock & SageMaker'
   },
   {
     phase: '5. CMO Synthesizer',
@@ -49,7 +49,7 @@ const systemNodes = [
 const techStack = [
   { group: 'Interface Layer', items: ['React 19 / Next.js 16 (App Router)', 'Tailwind CSS v4 (Glassmorphism Custom)', 'Framer Motion (Physics Springs)', 'Lucide Icons'] },
   { group: 'Ingestion Layer', items: ['MNE-Python (EDF/BDF Ingress)', 'Pandas (CSV/TXT Processing)', 'NumPy (Vector Matrices)', 'SciPy (Signal Filtering)'] },
-  { group: 'AI & Inference Engines', items: ['TensorFlow 2.x / Keras (CNN Morphology)', 'PyTorch 2.x (Neuroformer / SPECTRA)', 'TensorFlow-DirectML (GPU Acceleration)', 'CUDA 12.x / WSL2 Compatible'] }
+  { group: 'AI & Inference Engines', items: ['NHRN-PD (PyTorch — PD Detection, 88.5% Acc)', 'Neuroformer (PyTorch — AD/FTD, 82.0% Acc)', 'SPECTRA-SZ (PyTorch — SZ Detection, 85.0% Acc)', 'AWS Bedrock / SageMaker (Agentic Routing)'] }
 ];
 
 export default function SystemPage() {

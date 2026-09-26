@@ -16,7 +16,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "Agentic Disease Finder | Virtual CMO Diagnostics Suite",
-  description: "Advanced multi-modal deep learning platform routing EEG signals and brain MRI scans across neural ensembles for automated clinical diagnostics.",
+  description: "Advanced multi-agent framework routing EEG signals across neural ensembles (NHRN-PD, Neuroformer, SPECTRA-SZ) for automated clinical diagnostics.",
 };
 
 export default function RootLayout({

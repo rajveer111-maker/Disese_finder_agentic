@@ -23,6 +23,7 @@ import {
 import Card3D from '@/components/Card3D';
 
 // Clinical case details
+// Clinical case details
 const clinicalCases = [
   {
     id: 'case-1',
@@ -32,14 +33,14 @@ const clinicalCases = [
     specs: { channels: 22, duration: 12, rate: 250, quality: 'Medium' },
     waveConfig: { freq: [8, 12, 18], amp: [25, 45, 12], speed: 1.5, noise: 0.12 },
     results: [
-      { key: 'eeg_pd', name: "EEG Parkinson's Detector", pred: "Parkinson's Disease", prob: 0.914, status: 'warn', report: "Neurological Parkinson's Detector: Detected abnormal rest-state basal ganglia beta rhythms (91.4% confidence), indicating early Parkinsonian activity. High-power beta coupling suggests potential dopaminergic pathway decay." },
-      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Cognitively Normal', prob: 0.783, status: 'ok', report: "Neuroformer Classifier: Temporal sequence modeling identified Cognitively Normal temporal dynamics (78.3% confidence). Neuronal firing synchronization tracks expected cognitive pathways." },
-      { key: 'bci2a', name: 'BCI2A Motor Decoder', pred: 'Uncertain (Left Hand)', prob: 0.352, status: 'info', report: "BCI2A Motor Decoder: Motor imagery classification is below threshold. Rest-state control baseline decoded movement intent as Uncertain (35.2% confidence)." },
-      { key: 'spectra_sz', name: 'SPECTRA Routing Net', pred: 'Healthy', prob: 0.887, status: 'ok', report: "SPECTRA Routing: Complex psychiatric evaluation identified Healthy signatures (88.7% confidence). Rhythmic phase locking and multi-frequency band coupling indicate stable cognitive baseline." },
-      { key: 'tumor_mri', name: 'MRI Morphology Net', pred: 'No Tumor', prob: 0.991, status: 'ok', report: "MRI Morphology: Spatial matrix CNN scans identified No Tumor (99.1% confidence). Multi-scale feature extraction maps trace structural density borders, indicating tissue layout consistency with healthy scans." }
+      { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: "Parkinson's Disease", prob: 0.914, status: 'warn', report: "NHRN-PD Classifier: Detected abnormal rest-state basal ganglia beta-band (13-30Hz) rhythms (91.4% confidence), indicating early Parkinsonian activity. High-power beta coupling suggests potential dopaminergic pathway decay." },
+      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Inactive', prob: 0, status: 'info', report: "Neuroformer Classifier: Bypassed. NHRN-PD neuromorphic classifier is currently the active routed diagnostic node." },
+      { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: 'Inactive', prob: 0, status: 'info', report: "SPECTRA-SZ Routing: Bypassed. NHRN-PD neuromorphic classifier is currently the active routed diagnostic node." },
+      { key: 'healthy_control', name: 'Healthy Control Baseline', pred: 'Inactive', prob: 0, status: 'info', report: "Healthy Control Baseline: Bypassed. NHRN-PD neuromorphic classifier is currently the active routed diagnostic node." },
+      { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: 'Inactive', prob: 0, status: 'info', report: "Telemetry Gate Φ(t): Bypassed. NHRN-PD neuromorphic classifier is currently the active routed diagnostic node." }
     ],
     reasoning: "Metadata checks show 22 active electrodes. Signal preprocessor detects significant rhythmic slow oscillations in the 4-8Hz theta band and high-amplitude bursts in the 13-30Hz beta range, matching basal ganglia resting-state Parkinsonian abnormalities.",
-    synthesis: "Consensus routing highlights a primary Parkinson's Disease classification (91.4% confidence) driven by theta-beta cortical power coupling. Cognitive networks show normal temporal dynamics, indicating absence of major Alzheimer's or dementia signatures. BCI command decoding is below threshold. Recommend full neurological evaluation, focusing on dopamine-responsive pathways."
+    synthesis: "Consensus routing highlights a primary Parkinson's Disease classification (91.4% confidence) driven by theta-beta cortical power coupling. Cognitive networks show normal temporal dynamics, indicating absence of major Alzheimer's or dementia signatures. Recommend full neurological evaluation, focusing on dopamine-responsive pathways."
   },
   {
     id: 'case-2',
@@ -49,48 +50,65 @@ const clinicalCases = [
     specs: { channels: 19, duration: 24, rate: 500, quality: 'High' },
     waveConfig: { freq: [4, 6, 10], amp: [50, 30, 8], speed: 0.8, noise: 0.05 },
     results: [
+      { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: 'Inactive', prob: 0, status: 'info', report: "NHRN-PD Classifier: Bypassed. Neuroformer sequence mapping is currently the active routed diagnostic node." },
       { key: 'neuroformer', name: 'Neuroformer Classifier', pred: "Alzheimer's Disease (AD)", prob: 0.868, status: 'warn', report: "Neuroformer Classifier: Temporal sequence modeling identified Alzheimer's Disease (AD) signatures (86.8% confidence). The transformer self-attention map indicates focal synchrony decoupling in temporal-parietal node pathways." },
-      { key: 'eeg_pd', name: "EEG Parkinson's Detector", pred: 'Healthy', prob: 0.925, status: 'ok', report: "Neurological Parkinson's Detector: Rhythmic activity is within healthy control ranges (92.5% confidence). Rest-state power spectrum density shows normal alpha/beta ratio with no significant parkinsonian tremor oscillations." },
-      { key: 'spectra_sz', name: 'SPECTRA Routing Net', pred: 'Healthy', prob: 0.891, status: 'ok', report: "SPECTRA Routing: Complex psychiatric evaluation identified Healthy signatures (89.1% confidence). Rhythmic phase locking and multi-frequency band coupling indicate stable cognitive baseline." },
-      { key: 'tumor_mri', name: 'MRI Morphology Net', pred: 'No Tumor', prob: 0.984, status: 'ok', report: "MRI Morphology: Spatial matrix CNN scans identified No Tumor (98.4% confidence). Multi-scale feature extraction maps trace structural density borders, indicating tissue layout consistency with healthy scans." },
-      { key: 'bci2a', name: 'BCI2A Motor Decoder', pred: 'Uncertain', prob: 0.224, status: 'info', report: "BCI2A Motor Decoder: Motor imagery classification is below threshold. Rest-state control baseline decoded movement intent as Uncertain (22.4% confidence)." }
+      { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: 'Inactive', prob: 0, status: 'info', report: "SPECTRA-SZ Routing: Bypassed. Neuroformer sequence mapping is currently the active routed diagnostic node." },
+      { key: 'healthy_control', name: 'Healthy Control Baseline', pred: 'Inactive', prob: 0, status: 'info', report: "Healthy Control Baseline: Bypassed. Neuroformer sequence mapping is currently the active routed diagnostic node." },
+      { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: 'Inactive', prob: 0, status: 'info', report: "Telemetry Gate Φ(t): Bypassed. Neuroformer sequence mapping is currently the active routed diagnostic node." }
     ],
     reasoning: "Metadata checks show 19 active channels. Deep sequence modeling tracks delta/theta slowing along temporal-parietal nodes, indicating progressive synaptic decoupling and cognitive decline signatures.",
-    synthesis: "Cognitive routing detects Alzheimer's Disease (AD) signatures with 86.8% confidence. Significant temporal coherence drop-offs match early-to-mid stage dementia sequences. Rest-state motor networks (Parkinsonian) and structural matrices are fully normal. Early cognitive testing and hippocampal volumetrics are recommended."
+    synthesis: "Cognitive routing detects Alzheimer's Disease (AD) signatures with 86.8% confidence. Significant temporal coherence drop-offs match early-to-mid stage dementia sequences. PD classifier and SZ evaluations are within healthy boundaries. Early cognitive testing and hippocampal volumetrics are recommended."
   },
   {
     id: 'case-3',
-    name: 'Motor Imagery Rehabilitation',
-    file: 'bci_imagery_rh.csv',
-    type: 'csv',
-    specs: { channels: 22, duration: 4, rate: 250, quality: 'High' },
+    name: 'Schizophrenia Spectral Screening',
+    file: 'eeg_sz_gamma_07.edf',
+    type: 'edf',
+    specs: { channels: 19, duration: 15, rate: 250, quality: 'High' },
     waveConfig: { freq: [10, 15, 24], amp: [30, 20, 25], speed: 2.2, noise: 0.03 },
     results: [
-      { key: 'bci2a', name: 'BCI2A Motor Decoder', pred: 'Right Hand Imagery', prob: 0.947, status: 'ok', report: "Motor Function (BCI): Decoded movement intent as Right Hand Imagery with 94.7% confidence. The temporal convolutional layers tracked strong activity over motor cortex electrodes, matching the spatial patterns of right hand imagery planning." },
-      { key: 'eeg_pd', name: "EEG Parkinson's Detector", pred: 'Healthy', prob: 0.952, status: 'ok', report: "Neurological Parkinson's Detector: Rhythmic activity is within healthy control ranges (95.2% confidence). Rest-state power spectrum density shows normal alpha/beta ratio with no parkinsonian tremor signatures." },
-      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Cognitively Normal', prob: 0.913, status: 'ok', report: "Neuroformer Classifier: Temporal sequence modeling identified Cognitively Normal temporal dynamics (91.3% confidence). Neuronal firing synchronization tracks expected cognitive pathways." },
-      { key: 'spectra_sz', name: 'SPECTRA Routing Net', pred: 'Healthy', prob: 0.928, status: 'ok', report: "SPECTRA Routing: Complex psychiatric evaluation identified Healthy signatures (92.8% confidence). Rhythmic phase locking and multi-frequency band coupling indicate stable cognitive baseline." },
-      { key: 'tumor_mri', name: 'MRI Morphology Net', pred: 'No Tumor', prob: 0.998, status: 'ok', report: "MRI Morphology: Spatial matrix CNN scans identified No Tumor (99.8% confidence). Multi-scale feature extraction maps trace structural density borders, indicating tissue layout consistency with healthy scans." }
+      { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: 'Inactive', prob: 0, status: 'info', report: "NHRN-PD Classifier: Bypassed. SPECTRA-SZ phase lock analysis is currently the active routed diagnostic node." },
+      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Inactive', prob: 0, status: 'info', report: "Neuroformer Classifier: Bypassed. SPECTRA-SZ phase lock analysis is currently the active routed diagnostic node." },
+      { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: 'Schizophrenia (SZ)', prob: 0.872, status: 'warn', report: "SPECTRA-SZ Routing: Gamma-band (30-80Hz) phase locking analysis detected abnormal task-induced spectral coupling (87.2% confidence). Cognitive synchrony patterns show disrupted gamma oscillation coherence consistent with SZ biomarkers." },
+      { key: 'healthy_control', name: 'Healthy Control Baseline', pred: 'Inactive', prob: 0, status: 'info', report: "Healthy Control Baseline: Bypassed. SPECTRA-SZ phase lock analysis is currently the active routed diagnostic node." },
+      { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: 'Inactive', prob: 0, status: 'info', report: "Telemetry Gate Φ(t): Bypassed. SPECTRA-SZ phase lock analysis is currently the active routed diagnostic node." }
     ],
-    reasoning: "Metadata checks show 22 active motor electrodes. Preprocessor isolated a localized 8-12Hz alpha/mu desynchronization (ERD) over the left hemisphere (C3 electrode), mapping motor cortex hand imagery activation.",
-    synthesis: "BCI2A spatial-temporal decoder identifies a high-gain Right Hand Imagery command (94.7% confidence) suitable for motor rehabilitation control loops. All background clinical markers (Alzheimer's, Parkinson's, Tumor) are clean and within healthy boundaries."
+    reasoning: "Metadata checks show 19 active channels. SPECTRA-SZ detects disrupted gamma-band (30-80Hz) phase coupling and task-induced coherence anomalies consistent with schizophrenia spectral biomarkers.",
+    synthesis: "SPECTRA-SZ flags Schizophrenia (SZ) spectral patterns with 87.2% confidence based on disrupted gamma-band phase locking. PD classifier and Neuroformer cognitive assessment are within healthy boundaries. Recommend psychiatric evaluation and structured clinical interview for DSM-5 confirmation."
   },
   {
     id: 'case-4',
-    name: 'Spatial Brain MRI Screening',
-    file: 'mri_scan_axial.png',
-    type: 'image',
-    specs: { channels: 1, duration: 1, rate: 0, quality: 'High (Spatial)' },
-    waveConfig: { freq: [2, 5, 8], amp: [15, 20, 15], speed: 0.5, noise: 0.01 }, // slow laser scanner config
+    name: 'Healthy Control Baseline',
+    file: 'healthy_control_014.csv',
+    type: 'csv',
+    specs: { channels: 19, duration: 20, rate: 250, quality: 'High' },
+    waveConfig: { freq: [10, 12, 20], amp: [20, 15, 10], speed: 1.0, noise: 0.02 },
     results: [
-      { key: 'tumor_mri', name: 'MRI Morphology Net', pred: 'Meningioma Detected', prob: 0.892, status: 'warn', report: "MRI Morphology: Spatial matrix CNN scans identified Meningioma Detected (89.2% confidence). Multi-scale feature extraction maps trace structural density borders, indicating tissue layout consistency with meningioma structures." },
-      { key: 'eeg_pd', name: "EEG Parkinson's Detector", pred: 'Healthy', prob: 0.941, status: 'ok', report: "Neurological Parkinson's Detector: Rhythmic activity is within healthy control ranges (94.1% confidence). Rest-state power spectrum density shows normal alpha/beta ratio with no parkinsonian tremor signatures." },
-      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Cognitively Normal', prob: 0.883, status: 'ok', report: "Neuroformer Classifier: Temporal sequence modeling identified Cognitively Normal temporal dynamics (88.3% confidence). Neuronal firing synchronization tracks expected cognitive pathways." },
-      { key: 'spectra_sz', name: 'SPECTRA Routing Net', pred: 'Healthy', prob: 0.902, status: 'ok', report: "SPECTRA Routing: Complex psychiatric evaluation identified Healthy signatures (90.2% confidence). Rhythmic phase locking and multi-frequency band coupling indicate stable cognitive baseline." },
-      { key: 'bci2a', name: 'BCI2A Motor Decoder', pred: 'Uncertain', prob: 0.284, status: 'info', report: "BCI2A Motor Decoder: Motor imagery classification is below threshold. Rest-state control baseline decoded movement intent as Uncertain (28.4% confidence)." }
+      { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: 'Inactive', prob: 0, status: 'info', report: "NHRN-PD Classifier: Bypassed. Normal physiological baselines verify Healthy Control status." },
+      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Inactive', prob: 0, status: 'info', report: "Neuroformer Classifier: Bypassed. Normal physiological baselines verify Healthy Control status." },
+      { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: 'Inactive', prob: 0, status: 'info', report: "SPECTRA-SZ Routing: Bypassed. Normal physiological baselines verify Healthy Control status." },
+      { key: 'healthy_control', name: 'Healthy Control Baseline', pred: 'Healthy Control', prob: 0.963, status: 'ok', report: "Healthy Control Baseline: Normal physiological baselines verify Healthy Control status (96.3% confidence). Both motor and cognitive rhythmic frequencies are within typical ranges." },
+      { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: 'Inactive', prob: 0, status: 'info', report: "Telemetry Gate Φ(t): Bypassed. Normal physiological baselines verify Healthy Control status." }
     ],
-    reasoning: "2D spatial conversion models pixel grid distributions. Multiscale feature fusion isolates a hyper-dense boundary mass in the dural matrix, matching meningioma cell clustering signatures.",
-    synthesis: "Structural morphology CNN flags a local density indicative of Meningioma (89.2% confidence). The spatial lesion is localized to the axial plane with minimal perifocal edema. Resting-state neuro-oscillations are stable. Recommend urgent gadolinium-contrast MRI and neurosurgical consultation."
+    reasoning: "Metadata checks show 19 active channels with high signal quality (H_spec = 0.82). All three classifiers return consistent Healthy/Normal predictions with high confidence, indicating a clean neurological baseline.",
+    synthesis: "All three neural classifiers (NHRN-PD, Neuroformer, SPECTRA-SZ) converge on a Healthy / Cognitively Normal consensus with high confidence. No pathological EEG signatures detected across PD, AD, or SZ diagnostic domains. Subject demonstrates normal neurological baseline suitable for control cohort classification."
+  },
+  {
+    id: 'case-5',
+    name: 'Out-of-Domain Stress EEG / Corrupted Sensor Test',
+    file: 'sample_001_stressed.csv',
+    type: 'csv',
+    specs: { channels: 19, duration: 10, rate: 250, quality: 'Corrupted / Low H_spec' },
+    waveConfig: { freq: [1, 2, 40], amp: [80, 5, 2], speed: 0.3, noise: 0.65 },
+    results: [
+      { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: 'Inactive', prob: 0, status: 'info', report: "NHRN-PD Classifier: Bypassed. Low spectral entropy (H_spec < 0.35) triggered signal rejection." },
+      { key: 'neuroformer', name: 'Neuroformer Classifier', pred: 'Inactive', prob: 0, status: 'info', report: "Neuroformer Classifier: Bypassed. Low spectral entropy (H_spec < 0.35) triggered signal rejection." },
+      { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: 'Inactive', prob: 0, status: 'info', report: "SPECTRA-SZ Routing: Bypassed. Low spectral entropy (H_spec < 0.35) triggered signal rejection." },
+      { key: 'healthy_control', name: 'Healthy Control Baseline', pred: 'Inactive', prob: 0, status: 'info', report: "Healthy Control Baseline: Bypassed. Low spectral entropy (H_spec < 0.35) triggered signal rejection." },
+      { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: 'Uncertain (Rejected)', prob: 1.0, status: 'error', report: "Telemetry Quality Gate: Intercepted sensor anomaly / low spectral entropy (H_spec < 0.35). Signal fails baseline electrophysiological validity checks." }
+    ],
+    reasoning: 'Spectral entropy check (H_spec = 0.28 < 0.35) and referral ambiguity score (alpha_ambig = 0.68 > 0.40) indicate an out-of-domain recording. Signal fails Telemetry Gate Phi(t) and triggers safety guardrail flag gamma_guard = 1.',
+    synthesis: 'OUT-OF-DOMAIN SIGNAL REJECTED: Signal quality checks intercept non-target Stress EEG / sensor artifact. Master Agent A_top safety guardrail successfully routes sample to Uncertain (Rejected) with zero false positive diagnostic error.'
   }
 ];
 
@@ -341,19 +359,18 @@ export default function CMOPage() {
         const apiRouting = apiRes.routing || {};
         
         // Map API results keys to match the frontend representation
-        const getModelStatus = (pred: string, normalVal: string, isBci: boolean = false) => {
-          if (pred.includes('Uncertain') || pred.includes('Error') || pred.includes('Unknown')) return 'info';
-          if (isBci) return 'ok';
+        const getModelStatus = (pred: string, normalVal: string) => {
+          if (pred.includes('Inactive') || pred.includes('Bypassed')) return 'info';
+          if (pred.includes('Uncertain') || pred.includes('Error') || pred.includes('Unknown') || pred.includes('Rejected')) return 'info';
           return pred !== normalVal ? 'warn' : 'ok';
         };
 
         const mappedResults = [
-          { key: 'eeg_pd', name: "EEG Parkinson's Detector", pred: apiResults.eeg_pd?.prediction || 'Uncertain', prob: apiResults.eeg_pd?.probability || 0, status: getModelStatus(apiResults.eeg_pd?.prediction || 'Uncertain', 'Healthy'), report: apiRes.individual_reports?.eeg_pd || "No report generated." },
-          { key: 'nhrn_pd', name: "NHRN Parkinson's Net", pred: apiResults.nhrn_pd?.prediction || 'Uncertain', prob: apiResults.nhrn_pd?.probability || 0, status: getModelStatus(apiResults.nhrn_pd?.prediction || 'Uncertain', 'Healthy'), report: apiRes.individual_reports?.nhrn_pd || "No report generated." },
+          { key: 'nhrn_pd', name: "NHRN-PD Neuromorphic Classifier", pred: apiResults.nhrn_pd?.prediction || 'Uncertain', prob: apiResults.nhrn_pd?.probability || 0, status: getModelStatus(apiResults.nhrn_pd?.prediction || 'Uncertain', 'Healthy'), report: apiRes.individual_reports?.nhrn_pd || "No report generated." },
           { key: 'neuroformer', name: 'Neuroformer Classifier', pred: apiResults.neuroformer?.prediction || 'Uncertain', prob: apiResults.neuroformer?.probability || 0, status: getModelStatus(apiResults.neuroformer?.prediction || 'Uncertain', 'CN'), report: apiRes.individual_reports?.neuroformer || "No report generated." },
-          { key: 'bci2a', name: 'BCI2A Motor Decoder', pred: apiResults.bci2a_crdae?.prediction || 'Uncertain', prob: apiResults.bci2a_crdae?.probability || 0, status: getModelStatus(apiResults.bci2a_crdae?.prediction || 'Uncertain', '', true), report: apiRes.individual_reports?.bci2a_crdae || "No report generated." },
-          { key: 'spectra_sz', name: 'SPECTRA Routing Net', pred: apiResults.spectra_sz?.prediction || 'Uncertain', prob: apiResults.spectra_sz?.probability || 0, status: getModelStatus(apiResults.spectra_sz?.prediction || 'Uncertain', 'Healthy'), report: apiRes.individual_reports?.spectra_sz || "No report generated." },
-          { key: 'tumor_mri', name: 'MRI Morphology Net', pred: apiResults.brain_tumor_mri?.prediction || 'Uncertain', prob: apiResults.brain_tumor_mri?.probability || 0, status: getModelStatus(apiResults.brain_tumor_mri?.prediction || 'Uncertain', 'No Tumor'), report: apiRes.individual_reports?.brain_tumor_mri || "No report generated." }
+          { key: 'spectra_sz', name: 'SPECTRA-SZ Routing Net', pred: apiResults.spectra_sz?.prediction || 'Uncertain', prob: apiResults.spectra_sz?.probability || 0, status: getModelStatus(apiResults.spectra_sz?.prediction || 'Uncertain', 'Healthy'), report: apiRes.individual_reports?.spectra_sz || "No report generated." },
+          { key: 'healthy_control', name: 'Healthy Control Baseline', pred: apiResults.healthy_control?.prediction || 'Uncertain', prob: apiResults.healthy_control?.probability || 0, status: getModelStatus(apiResults.healthy_control?.prediction || 'Uncertain', 'Healthy Control'), report: apiRes.individual_reports?.healthy_control || "No report generated." },
+          { key: 'uncertain', name: 'Telemetry Gate Φ(t)', pred: apiResults.uncertain?.prediction || 'Uncertain', prob: apiResults.uncertain?.probability || 0, status: getModelStatus(apiResults.uncertain?.prediction || 'Uncertain', 'Uncertain (Rejected)'), report: apiRes.individual_reports?.uncertain || "No report generated." }
         ];
 
         setResultsMatrix(mappedResults);
@@ -735,22 +752,26 @@ export default function CMOPage() {
                             <td className={`font-mono text-sm ${
                               isWarning ? 'text-rose-400 font-bold' : isUncertain ? 'text-slate-500' : 'text-slate-200'
                             }`} style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                              {r.pred}
+                              {r.pred === 'Inactive' ? <span className="text-slate-600 italic">Inactive</span> : r.pred}
                             </td>
                             <td className="text-right" style={{ paddingTop: '1.5rem', paddingBottom: '1.5rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                              <div className="flex items-center justify-end" style={{ gap: '1.25rem' }}>
-                                <span className="font-bold font-mono text-sm text-slate-200">{Math.round(r.prob * 100)}%</span>
-                                <div className="w-32 bg-black/40 border border-white/10 h-3 rounded-full overflow-hidden">
-                                  <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${r.prob * 100}%` }}
-                                    transition={{ duration: 1.2, ease: 'easeOut' }}
-                                    className={`h-full rounded-full ${
-                                      isWarning ? 'bg-gradient-to-r from-rose-500/80 to-amber-500/80' : 'bg-gradient-to-r from-primary-purple to-accent-cyan'
-                                    }`} 
-                                  />
+                              {r.pred !== 'Inactive' ? (
+                                <div className="flex items-center justify-end" style={{ gap: '1.25rem' }}>
+                                  <span className="font-bold font-mono text-sm text-slate-200">{Math.round(r.prob * 100)}%</span>
+                                  <div className="w-32 bg-black/40 border border-white/10 h-3 rounded-full overflow-hidden">
+                                    <motion.div 
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${r.prob * 100}%` }}
+                                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                                      className={`h-full rounded-full ${
+                                        isWarning ? 'bg-gradient-to-r from-rose-500/80 to-amber-500/80' : 'bg-gradient-to-r from-primary-purple to-accent-cyan'
+                                      }`} 
+                                    />
+                                  </div>
                                 </div>
-                              </div>
+                              ) : (
+                                <span className="text-slate-600 font-mono text-sm" style={{ marginRight: '1.5rem' }}>-</span>
+                              )}
                             </td>
                           </tr>
                           

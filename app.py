@@ -248,18 +248,44 @@ def process_uploaded_file(uploaded_file):
             
     return None, None
 
-def run_agentic_analysis(data, file_name, model_manager):
+def run_agentic_analysis(data, file_name, model_manager, agentic_system=None):
     with st.spinner("Agent is running multi-model clinical analysis..."):
         import time
         time.sleep(1) # simulate thinking
         
+        file_ext = os.path.splitext(file_name)[1].lstrip('.').lower() if file_name else 'csv'
         context = {'filename': file_name} if file_name else {}
         
-        # Execute all models including MRI
+        # 1. Execute Agentic Routing Policy Decision
+        if agentic_system is not None:
+            decision = agentic_system.decide_model(data, file_ext, context)
+            selected_model = decision.get('selected_model', 'nhrn_pd')
+            agent_conf = decision.get('confidence', 0.85)
+            reasoning_summary = decision.get('reasoning', ['Validated signal quality and duration metrics.'])
+            
+            st.markdown(f"""
+            <div class="glass-panel" style="border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.08); margin-bottom: 24px;">
+                <div style="color: #10b981; font-size: 0.85rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px;">
+                    🧠 MASTER ORCHESTRATION AGENT ROUTING POLICY CORE (A_top)
+                </div>
+                <div style="font-size: 1.4rem; font-weight: bold; color: #f8fafc; margin-bottom: 4px;">
+                    Optimal Model Endpoint Selected: <span style="color: #34d399;">{selected_model.upper()}</span>
+                </div>
+                <div style="color: #a7f3d0; font-size: 1.05rem; font-weight: 600; margin-bottom: 10px;">
+                    Agent Routing Confidence score τ_route = {agent_conf:.2%}
+                </div>
+                <div style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5;">
+                    <b>Agent Reasoning Chain:</b><br>
+                    • {'<br>• '.join(reasoning_summary[:3])}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # 2. Execute all models including MRI
         active_models = model_manager.get_available_models()
         results = {}
         
-        st.markdown("<h3 class='gradient-text' style='margin-top: 30px;'>Multi-Modal Diagnostics</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class='gradient-text' style='margin-top: 20px;'>Multi-Modal Neural Ensemble Diagnostics</h3>", unsafe_allow_html=True)
         
         cols = st.columns(len(active_models))
         
@@ -294,7 +320,7 @@ def run_agentic_analysis(data, file_name, model_manager):
                     st.error(f"Error in {model_key}: {str(e)}")
                     
         # Agentic Comprehensive Patient Analysis
-        st.markdown("<h3 class='gradient-text'>🧠 Comprehensive Patient Analysis</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 class='gradient-text'>🧠 Virtual CMO Synthesized Clinical Report</h3>", unsafe_allow_html=True)
         
         # Logic to synthesize results
         analysis_parts = []
@@ -366,13 +392,13 @@ if app_mode == "🩺 Clinical Diagnosis":
         else:
             st.info("Upload data to see visualization.")
 
-    # Analyis Section
+    # Analysis Section
     if data is not None:
         st.markdown("---")
         st.subheader("3. Agentic Analysis")
         
         if st.button("Start Diagnosis"):
-            run_agentic_analysis(data, file_name, model_manager)
+            run_agentic_analysis(data, file_name, model_manager, agentic_system)
 
 elif app_mode == "🧪 Sample Data Analysis":
     st.markdown("---")
@@ -405,36 +431,53 @@ elif app_mode == "🧪 Sample Data Analysis":
             
             st.markdown("---")
             if st.button("Run Multi-Modal Analysis on Sample"):
-                run_agentic_analysis(data, selected_file, model_manager)
+                run_agentic_analysis(data, selected_file, model_manager, agentic_system)
 
 elif app_mode == "📈 Model Performance":
-    st.header("Model Performance & Benchmarks")
-    # Load the latest generated images if they exist
+    st.header("Agentic Model Performance & Benchmarks")
     
-    st.markdown("### Confusion Matrices")
+    st.markdown("### 🏛️ System Architecture & Orchestration Flow")
+    if os.path.exists("springer_paper/top_agent_block_diagram.png"):
+        st.image("springer_paper/top_agent_block_diagram.png", caption="Master Orchestration Agent Policy Architecture & Dynamic Pipeline", use_column_width=True)
+    
+    st.markdown("---")
+    st.markdown("### 📊 Multi-Domain Confusion Matrices & Evaluation Metrics")
     
     cols = st.columns(2)
     with cols[0]:
-        st.markdown("**BCI2A Motor Imagery**")
-        if os.path.exists("outputs/bci2a_confusion_matrix_enhanced.png"):
+        st.markdown("**Unified 3-Domain Confusion Matrix**")
+        if os.path.exists("springer_paper/unified_confusion_matrix.png"):
+            st.image("springer_paper/unified_confusion_matrix.png", use_column_width=True)
+        elif os.path.exists("outputs/bci2a_confusion_matrix_enhanced.png"):
             st.image("outputs/bci2a_confusion_matrix_enhanced.png", use_column_width=True)
-        else:
-            st.warning("Run analysis to generate matrix.")
             
     with cols[1]:
-        st.markdown("**Parkinson's Disease Detection**")
-        if os.path.exists("outputs/eeg_pd_confusion_matrix_enhanced.png"):
+        st.markdown("**Master Agent Score Analysis**")
+        if os.path.exists("springer_paper/top_agent_score_analysis.png"):
+            st.image("springer_paper/top_agent_score_analysis.png", use_column_width=True)
+        elif os.path.exists("outputs/eeg_pd_confusion_matrix_enhanced.png"):
             st.image("outputs/eeg_pd_confusion_matrix_enhanced.png", use_column_width=True)
-        else:
-            st.warning("Run analysis to generate matrix.")
             
-    st.markdown("### Research Analysis")
+    cols2 = st.columns(2)
+    with cols2[0]:
+        st.markdown("**Classification Performance Across Disorders**")
+        if os.path.exists("springer_paper/performance_comparison.png"):
+            st.image("springer_paper/performance_comparison.png", use_column_width=True)
+            
+    with cols2[1]:
+        st.markdown("**Transaction Execution Latency Comparison**")
+        if os.path.exists("springer_paper/latency_comparison.png"):
+            st.image("springer_paper/latency_comparison.png", use_column_width=True)
+            
+    st.markdown("---")
+    st.markdown("### 📝 Clinical Research Evaluation Summary")
     if os.path.exists("outputs/PAPER_ANALYSIS_SECTION.md"):
         with open("outputs/PAPER_ANALYSIS_SECTION.md", "r") as f:
             analysis_text = f.read()
             st.markdown(analysis_text)
-    else:
-        st.info("Run `generate_paper_analysis.py` to see the automated research report here.")
+    elif os.path.exists("AGENTIC_SYSTEM_EVALUATION_REPORT.md"):
+        with open("AGENTIC_SYSTEM_EVALUATION_REPORT.md", "r") as f:
+            st.markdown(f.read())
 
 elif app_mode == "ℹ️ System Info":
     st.markdown("<h2 class='gradient-text'>System Architecture</h2>", unsafe_allow_html=True)
