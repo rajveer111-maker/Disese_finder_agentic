@@ -12,7 +12,7 @@ This module implements:
   - Diagnostic uncertainty score delta_conflict for Virtual CMO
   - 5-class action space: {M_HC, M_PD, M_AD, M_SZ, empty_unroutable}
 
-Reference: ANDI IEEE TNSRE Submission, Section II-C
+Reference: ANDI Architecture Specification (Manuscript Under Peer Review)
 """
 
 import numpy as np

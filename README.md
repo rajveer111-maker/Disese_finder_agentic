@@ -1,12 +1,12 @@
 ﻿# ANDI: Agentic Neurological Disorder Identifier
 
-Official implementation and reference architecture for **ANDI: Agentic Neurological Disorder Identifier**, submitted to *IEEE Transactions on Neural Systems and Rehabilitation Engineering (TNSRE)*.
+An open-source research implementation of an agentic orchestration and routing architecture for multichannel electroencephalography (EEG) analysis.
 
 ---
 
 ## 🔬 System Architecture
 
-ANDI introduces a multi-tier agentic decision architecture for autonomous, robust routing and diagnosis of neurological disorders from resting-state and task-induced electroencephalography (EEG):
+The ANDI framework introduces a multi-tier agentic decision architecture for autonomous, robust routing and diagnosis of neurological disorders from resting-state and task-induced electroencephalography (EEG):
 
 $$\mathcal{A}_{\text{top}} = \langle \mathcal{S}, \mathcal{A}, \mathcal{K}, \pi_{\text{top}}, \mathcal{C}_{\text{CMO}} \rangle$$
 
@@ -59,7 +59,7 @@ $$\Phi(\mathbf{t}) = \mathbb{I}(\sigma > 0.01\,\mu\text{V}) \cdot \mathbb{I}(H_{
 where $H_{\text{spec}} = -\frac{1}{\ln K}\sum_{k=1}^K p_k \ln p_k$ represents broadband spectral entropy derived from Welch power spectral density.
 
 ### 2. Dual-Branch Soft Routing Policy $\pi_{\text{top}}$
-Continuous arbitration between the clinical RAG policy ($\pi_{\text{top}}^{\text{RAG}}$) and normalized heuristic engine ($\pi_{\text{top}}^{\text{Heur}}$) is modulated by referral note ambiguity $\alpha_{\text{ambig}} \in [0, 1]$:
+Continuous arbitration between the clinical semantic policy ($\pi_{\text{top}}^{\text{RAG}}$) and normalized heuristic engine ($\pi_{\text{top}}^{\text{Heur}}$) is modulated by referral note ambiguity $\alpha_{\text{ambig}} \in [0, 1]$:
 $$\lambda(\alpha_{\text{ambig}}) = \frac{1}{1 + \exp\left(7(\alpha_{\text{ambig}} - 0.50)\right)}$$
 
 The heuristic utility score $U(m \mid \mathbf{s}_t)$ evaluates candidate models across four calibrated rules:
@@ -77,7 +77,7 @@ When $\Delta_{\text{conflict}} > 0.40$ or $H_{\text{spec}} < 0.35$, the safety g
 
 ---
 
-## 🧠 Specialized Diagnostic Engines
+## 🧠 Diagnostic Classifiers
 
 | Model | Target Disorder | Key Neural Mechanism | Nominal Input |
 |---|---|---|---|
@@ -133,15 +133,6 @@ print(f"Broadband Spectral Entropy H_spec: {decision['telemetry']['h_spec']:.4f}
 
 ---
 
-## 📄 IEEE Reference & Citation
+## 📄 Peer Review & Anonymity Notice
 
-If you use this codebase or architecture in your research, please cite:
-```bibtex
-@article{andi_ieee_tnsre_2026,
-  title={Autonomous Ingestion, Dynamic Routing, and Clinical Consensus in Multi-Disorder Neurological EEG Analysis: An Agentic System},
-  author={ANDI Research Consortium},
-  journal={IEEE Transactions on Neural Systems and Rehabilitation Engineering},
-  year={2026},
-  note={Under Peer Review}
-}
-```
+This codebase accompanies a manuscript currently under formal peer review. Bibliographic details, citations, and benchmark checkpoints will be released upon completion of peer review.
